@@ -27,6 +27,86 @@
             height: 100vh;
         }
 
+        .api-key-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+
+        .api-key-modal.hidden {
+            display: none;
+        }
+
+        .modal-content {
+            background: #1a1a1a;
+            padding: 30px;
+            border-radius: 16px;
+            max-width: 500px;
+            width: 90%;
+            border: 1px solid #3a3a3a;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            margin-bottom: 10px;
+            color: #fff;
+        }
+
+        .modal-description {
+            font-size: 14px;
+            color: #888;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .modal-input {
+            width: 100%;
+            background: #0f0f0f;
+            border: 1px solid #3a3a3a;
+            color: #fff;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 15px;
+            font-family: monospace;
+        }
+
+        .modal-btn {
+            width: 100%;
+            background: #4a9a6a;
+            border: none;
+            color: #fff;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .modal-btn:hover {
+            background: #5aaa7a;
+        }
+
+        .modal-link {
+            display: block;
+            text-align: center;
+            margin-top: 15px;
+            color: #4a9a6a;
+            font-size: 13px;
+            text-decoration: none;
+        }
+
+        .modal-link:hover {
+            text-decoration: underline;
+        }
+
         /* Sidebar */
         .sidebar {
             width: 260px;
@@ -49,6 +129,22 @@
         .logo {
             font-size: 16px;
             font-weight: 600;
+            color: #fff;
+        }
+
+        .settings-btn {
+            background: transparent;
+            border: 1px solid #3a3a3a;
+            color: #888;
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .settings-btn:hover {
+            background: #2a2a2a;
             color: #fff;
         }
 
@@ -580,19 +676,33 @@
     </style>
 </head>
 <body>
+    <!-- API Key Modal -->
+    <div class="api-key-modal" id="apiKeyModal">
+        <div class="modal-content">
+            <h2 class="modal-title">🔑 Введите API ключ OpenRouter</h2>
+            <p class="modal-description">
+                Для работы приложения необходим API ключ от OpenRouter. 
+                Ключ будет сохранен только в вашем браузере и никуда не отправляется.
+            </p>
+            <input 
+                type="text" 
+                class="modal-input" 
+                id="apiKeyInput" 
+                placeholder="sk-or-v1-..."
+            >
+            <button class="modal-btn" id="saveApiKeyBtn">Сохранить ключ</button>
+            <a href="https://openrouter.ai/keys" target="_blank" class="modal-link">
+                Получить ключ на OpenRouter →
+            </a>
+        </div>
+    </div>
+
     <div class="app-container">
         <!-- Sidebar -->
         <div class="sidebar">
             <div class="sidebar-header">
                 <div class="logo">AI Helper</div>
-                <div class="model-selector">
-                    <button class="model-btn" id="modelBtn">Llama 3.1 70B</button>
-                    <div class="model-dropdown" id="modelDropdown">
-                        <div class="model-option" data-model="DeepSeek R1">🧠 DeepSeek R1</div>
-                        <div class="model-option" data-model="Gemini Pro">🌟 Gemini Pro</div>
-                        <div class="model-option" data-model="GPT-3.5 Turbo">⚡ GPT-3.5 Turbo</div>
-                    </div>
-                </div>
+                <button class="settings-btn" id="settingsBtn" title="Настройки API ключа">⚙️</button>
             </div>
 
             <div class="multi-ai-toggle" id="multiAiToggle">
@@ -642,7 +752,6 @@
     <input type="file" id="imageInput" accept="image/*" multiple>
 
     <script>
-        const API_KEY = "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";
         const API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
         const MODELS = {
@@ -687,6 +796,7 @@
 
         class AIHelperApp {
             constructor() {
+                this.API_KEY = null;
                 this.sessions = [];
                 this.currentSession = null;
                 this.currentModel = "Llama 3.1 70B";
@@ -694,6 +804,7 @@
                 this.multiAiMode = false;
                 this.attachedImages = [];
 
+                this.initApiKey();
                 this.loadSessions();
                 this.initElements();
                 this.bindEvents();
@@ -705,9 +816,22 @@
                 }
             }
 
+            initApiKey() {
+                this.API_KEY = localStorage.getItem('openrouter_api_key');
+                const modal = document.getElementById('apiKeyModal');
+                
+                if (!this.API_KEY) {
+                    modal.classList.remove('hidden');
+                } else {
+                    modal.classList.add('hidden');
+                }
+            }
+
             initElements() {
-                this.modelBtn = document.getElementById('modelBtn');
-                this.modelDropdown = document.getElementById('modelDropdown');
+                this.apiKeyModal = document.getElementById('apiKeyModal');
+                this.apiKeyInput = document.getElementById('apiKeyInput');
+                this.saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
+                this.settingsBtn = document.getElementById('settingsBtn');
                 this.multiAiToggle = document.getElementById('multiAiToggle');
                 this.newChatBtn = document.getElementById('newChatBtn');
                 this.searchBox = document.getElementById('searchBox');
@@ -722,7 +846,8 @@
             }
 
             bindEvents() {
-                this.modelBtn.onclick = () => this.toggleModelDropdown();
+                this.saveApiKeyBtn.onclick = () => this.saveApiKey();
+                this.settingsBtn.onclick = () => this.openSettings();
                 this.multiAiToggle.onclick = () => this.toggleMultiAi();
                 this.newChatBtn.onclick = () => this.createNewChat();
                 this.clearBtn.onclick = () => this.deleteAllChats();
@@ -743,45 +868,34 @@
                     this.messageInput.style.height = 'auto';
                     this.messageInput.style.height = Math.min(this.messageInput.scrollHeight, 200) + 'px';
                 };
-
-                document.querySelectorAll('.model-option').forEach(opt => {
-                    opt.onclick = () => this.selectModel(opt.dataset.model);
-                });
-
-                document.addEventListener('click', (e) => {
-                    if (!this.modelBtn.contains(e.target) && !this.modelDropdown.contains(e.target)) {
-                        this.modelDropdown.classList.remove('active');
-                    }
-                });
             }
 
-            toggleModelDropdown() {
-                this.modelDropdown.classList.toggle('active');
-                this.updateModelDropdown();
+            saveApiKey() {
+                const key = this.apiKeyInput.value.trim();
+                if (!key) {
+                    alert('Пожалуйста, введите API ключ');
+                    return;
+                }
+                
+                if (!key.startsWith('sk-or-v1-')) {
+                    alert('Неверный формат ключа. Ключ должен начинаться с sk-or-v1-');
+                    return;
+                }
+                
+                this.API_KEY = key;
+                localStorage.setItem('openrouter_api_key', key);
+                this.apiKeyModal.classList.add('hidden');
+                console.log('API ключ сохранен');
             }
 
-            updateModelDropdown() {
-                const options = this.modelDropdown.querySelectorAll('.model-option');
-                options.forEach(opt => {
-                    opt.style.display = opt.dataset.model === this.currentModel ? 'none' : 'block';
-                });
+            openSettings() {
+                this.apiKeyInput.value = this.API_KEY || '';
+                this.apiKeyModal.classList.remove('hidden');
             }
 
             toggleMultiAi() {
                 this.multiAiMode = !this.multiAiMode;
                 this.multiAiToggle.classList.toggle('active', this.multiAiMode);
-            }
-
-            selectModel(model) {
-                this.currentModel = model;
-                const icon = MODELS[model].icon;
-                this.modelBtn.textContent = `${icon} ${model}`;
-                this.modelDropdown.classList.remove('active');
-                
-                if (this.currentSession) {
-                    this.currentSession.model = model;
-                    this.saveSessions();
-                }
             }
 
             handleImageSelect(e) {
@@ -867,8 +981,6 @@
             loadChat(session) {
                 this.currentSession = session;
                 this.currentModel = session.model;
-                const icon = MODELS[session.model].icon;
-                this.modelBtn.textContent = `${icon} ${session.model}`;
                 this.updateChatsList();
                 this.displayHistory();
             }
@@ -892,370 +1004,4 @@
                 });
 
                 setTimeout(() => {
-                    this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
-                }, 100);
-            }
-
-            clearMessages() {
-                this.messagesContainer.innerHTML = '';
-            }
-
-            showWelcome() {
-                this.messagesContainer.innerHTML = '<div class="welcome-message">Чем могу помочь?</div>';
-            }
-
-            addUserMessage(text, images = null) {
-                const msgDiv = document.createElement('div');
-                msgDiv.className = 'message user';
-                
-                const bubble = document.createElement('div');
-                bubble.className = 'message-bubble';
-                
-                if (images && images.length > 0) {
-                    images.forEach(img => {
-                        const imgEl = document.createElement('img');
-                        imgEl.src = img.data;
-                        imgEl.className = 'message-image';
-                        bubble.appendChild(imgEl);
-                    });
-                }
-                
-                const textEl = document.createElement('div');
-                textEl.textContent = text;
-                bubble.appendChild(textEl);
-                
-                msgDiv.appendChild(bubble);
-                this.messagesContainer.appendChild(msgDiv);
-                
-                this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
-            }
-
-            addAiMessage(text) {
-                const msgDiv = document.createElement('div');
-                msgDiv.className = 'message assistant';
-                
-                const bubble = document.createElement('div');
-                bubble.className = 'message-bubble';
-                bubble.innerHTML = this.formatMessage(text);
-                
-                msgDiv.appendChild(bubble);
-                this.messagesContainer.appendChild(msgDiv);
-                
-                this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
-            }
-
-            addMultiResponse(responses) {
-                const msgDiv = document.createElement('div');
-                msgDiv.className = 'message assistant';
-                
-                const container = document.createElement('div');
-                container.className = 'multi-response-container';
-                
-                const tabs = document.createElement('div');
-                tabs.className = 'response-tabs';
-                
-                const bubble = document.createElement('div');
-                bubble.className = 'message-bubble';
-                
-                let activeModel = null;
-                
-                Object.entries(responses).forEach(([model, response], index) => {
-                    const tab = document.createElement('div');
-                    tab.className = 'response-tab';
-                    if (response === null) tab.classList.add('loading');
-                    if (index === 0 && response !== null) {
-                        tab.classList.add('active');
-                        activeModel = model;
-                    }
-                    tab.textContent = `${MODELS[model].icon} ${model}`;
-                    tab.onclick = () => {
-                        if (response === null) return;
-                        tabs.querySelectorAll('.response-tab').forEach(t => t.classList.remove('active'));
-                        tab.classList.add('active');
-                        bubble.innerHTML = this.formatMessage(response);
-                    };
-                    tabs.appendChild(tab);
-                });
-                
-                if (activeModel && responses[activeModel]) {
-                    bubble.innerHTML = this.formatMessage(responses[activeModel]);
-                }
-                
-                container.appendChild(tabs);
-                container.appendChild(bubble);
-                msgDiv.appendChild(container);
-                this.messagesContainer.appendChild(msgDiv);
-                
-                this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
-                
-                return { tabs, bubble, responses };
-            }
-
-            formatMessage(text) {
-                const html = marked.parse(text);
-                const temp = document.createElement('div');
-                temp.innerHTML = html;
-                
-                temp.querySelectorAll('pre code').forEach((block) => {
-                    const pre = block.parentElement;
-                    const code = block.textContent;
-                    const lang = block.className.replace('language-', '') || 'text';
-                    
-                    const header = document.createElement('div');
-                    header.className = 'code-header';
-                    
-                    const langLabel = document.createElement('span');
-                    langLabel.className = 'code-language';
-                    langLabel.textContent = lang;
-                    
-                    const copyBtn = document.createElement('button');
-                    copyBtn.className = 'copy-btn';
-                    copyBtn.textContent = 'Копировать';
-                    copyBtn.onclick = () => {
-                        navigator.clipboard.writeText(code);
-                        copyBtn.textContent = 'Скопировано!';
-                        copyBtn.classList.add('copied');
-                        setTimeout(() => {
-                            copyBtn.textContent = 'Копировать';
-                            copyBtn.classList.remove('copied');
-                        }, 2000);
-                    };
-                    
-                    header.appendChild(langLabel);
-                    header.appendChild(copyBtn);
-                    pre.insertBefore(header, block);
-                });
-                
-                return temp.innerHTML;
-            }
-
-            addLoadingMessage() {
-                const msgDiv = document.createElement('div');
-                msgDiv.className = 'message loading';
-                msgDiv.id = 'loadingMsg';
-                
-                const bubble = document.createElement('div');
-                bubble.className = 'message-bubble';
-                bubble.textContent = 'Думаю...';
-                
-                msgDiv.appendChild(bubble);
-                this.messagesContainer.appendChild(msgDiv);
-                
-                this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
-            }
-
-            removeLoadingMessage() {
-                const loading = document.getElementById('loadingMsg');
-                if (loading) loading.remove();
-            }
-
-            async sendMessage() {
-                if (this.isLoading) return;
-
-                const message = this.messageInput.value.trim();
-                if (!message && this.attachedImages.length === 0) return;
-
-                const images = [...this.attachedImages];
-                this.addUserMessage(message, images.length > 0 ? images : null);
-                this.currentSession.addMessage('user', message, images.length > 0 ? images : null);
-                
-                this.messageInput.value = '';
-                this.messageInput.style.height = 'auto';
-                this.attachedImages = [];
-                this.updateImagePreviews();
-
-                this.isLoading = true;
-                this.sendBtn.disabled = true;
-
-                if (this.multiAiMode) {
-                    await this.sendMultiAiRequest(message, images);
-                } else {
-                    this.addLoadingMessage();
-                    await this.sendSingleAiRequest(message, images);
-                }
-
-                this.isLoading = false;
-                this.sendBtn.disabled = false;
-            }
-
-            async sendSingleAiRequest(message, images) {
-                try {
-                    const response = await this.callAiApi(this.currentModel, message, images);
-                    this.removeLoadingMessage();
-                    this.addAiMessage(response);
-                    this.currentSession.addMessage('assistant', response);
-                    this.updateChatsList();
-                    this.saveSessions();
-                } catch (error) {
-                    this.removeLoadingMessage();
-                    this.addAiMessage(`Ошибка: ${error.message}`);
-                }
-            }
-
-            async sendMultiAiRequest(message, images) {
-                const responses = {};
-                Object.keys(MODELS).forEach(model => {
-                    responses[model] = null;
-                });
-                
-                const multiMsg = this.addMultiResponse(responses);
-                
-                const promises = Object.keys(MODELS).map(async (model) => {
-                    try {
-                        const response = await this.callAiApi(model, message, images);
-                        responses[model] = response;
-                        
-                        const tab = Array.from(multiMsg.tabs.children).find(t => 
-                            t.textContent.includes(model)
-                        );
-                        if (tab) {
-                            tab.classList.remove('loading');
-                            if (tab.classList.contains('active')) {
-                                multiMsg.bubble.innerHTML = this.formatMessage(response);
-                            }
-                        }
-                    } catch (error) {
-                        responses[model] = `Ошибка: ${error.message}`;
-                        const tab = Array.from(multiMsg.tabs.children).find(t => 
-                            t.textContent.includes(model)
-                        );
-                        if (tab) {
-                            tab.classList.remove('loading');
-                        }
-                    }
-                });
-                
-                await Promise.all(promises);
-                
-                this.currentSession.addMessage('assistant', '', null);
-                this.currentSession.history[this.currentSession.history.length - 1].multiResponses = responses;
-                this.updateChatsList();
-                this.saveSessions();
-            }
-
-            async callAiApi(model, message, images) {
-                const modelId = MODELS[model].id;
-                
-                let messages = [...this.currentSession.history];
-                if (images && images.length > 0) {
-                    const lastMsg = messages[messages.length - 1];
-                    const content = [{ type: "text", text: lastMsg.content }];
-                    
-                    images.forEach(img => {
-                        const base64 = img.data.split(',')[1];
-                        const mediaType = img.data.split(':')[1].split(';')[0];
-                        content.push({
-                            type: "image_url",
-                            image_url: {
-                                url: img.data
-                            }
-                        });
-                    });
-                    
-                    messages[messages.length - 1] = {
-                        role: lastMsg.role,
-                        content: content
-                    };
-                } else {
-                    messages = messages.map(m => ({
-                        role: m.role,
-                        content: m.content
-                    }));
-                }
-
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${API_KEY}`,
-                        'Content-Type': 'application/json',
-                        'HTTP-Referer': window.location.href,
-                        'X-Title': 'AI Helper Web'
-                    },
-                    body: JSON.stringify({
-                        model: modelId,
-                        messages: messages,
-                        max_tokens: 2000,
-                        temperature: 0.7
-                    })
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-
-                const data = await response.json();
-                return data.choices[0].message.content;
-            }
-
-            updateChatsList() {
-                this.chatsList.innerHTML = '';
-
-                this.sessions.forEach(session => {
-                    const chatDiv = document.createElement('div');
-                    chatDiv.className = 'chat-item';
-                    if (session === this.currentSession) {
-                        chatDiv.classList.add('active');
-                    }
-
-                    const textSpan = document.createElement('span');
-                    textSpan.className = 'chat-item-text';
-                    textSpan.textContent = session.getPreview();
-                    
-                    const deleteBtn = document.createElement('span');
-                    deleteBtn.className = 'delete-chat-btn';
-                    deleteBtn.textContent = '✕';
-                    deleteBtn.onclick = (e) => {
-                        e.stopPropagation();
-                        this.deleteChat(session);
-                    };
-
-                    chatDiv.appendChild(textSpan);
-                    chatDiv.appendChild(deleteBtn);
-                    chatDiv.onclick = () => this.loadChat(session);
-
-                    this.chatsList.appendChild(chatDiv);
-                });
-            }
-
-            searchChats(query) {
-                query = query.toLowerCase();
-                const items = this.chatsList.querySelectorAll('.chat-item');
-                
-                items.forEach(item => {
-                    const text = item.querySelector('.chat-item-text').textContent.toLowerCase();
-                    item.style.display = text.includes(query) ? 'flex' : 'none';
-                });
-            }
-
-            saveSessions() {
-                try {
-                    localStorage.setItem('ai_helper_sessions', JSON.stringify(this.sessions));
-                } catch (e) {
-                    console.error('Ошибка сохранения:', e);
-                }
-            }
-
-            loadSessions() {
-                try {
-                    const data = localStorage.getItem('ai_helper_sessions');
-                    if (data) {
-                        const parsed = JSON.parse(data);
-                        this.sessions = parsed.map(s => {
-                            const session = new ChatSession(s.title, s.model);
-                            session.id = s.id;
-                            session.history = s.history;
-                            session.createdAt = new Date(s.createdAt);
-                            return session;
-                        });
-                    }
-                } catch (e) {
-                    console.error('Ошибка загрузки:', e);
-                    this.sessions = [];
-                }
-            }
-        }
-
-        const app = new AIHelperApp();
-    </script>
-</body>
-</html>
+                    this.mess

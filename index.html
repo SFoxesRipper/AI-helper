@@ -978,3 +978,284 @@
                 });
                 
                 if (activeModel && responses[activeModel]) {
+                    bubble.innerHTML = this.formatMessage(responses[activeModel]);
+                }
+                
+                container.appendChild(tabs);
+                container.appendChild(bubble);
+                msgDiv.appendChild(container);
+                this.messagesContainer.appendChild(msgDiv);
+                
+                this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+                
+                return { tabs, bubble, responses };
+            }
+
+            formatMessage(text) {
+                const html = marked.parse(text);
+                const temp = document.createElement('div');
+                temp.innerHTML = html;
+                
+                temp.querySelectorAll('pre code').forEach((block) => {
+                    const pre = block.parentElement;
+                    const code = block.textContent;
+                    const lang = block.className.replace('language-', '') || 'text';
+                    
+                    const header = document.createElement('div');
+                    header.className = 'code-header';
+                    
+                    const langLabel = document.createElement('span');
+                    langLabel.className = 'code-language';
+                    langLabel.textContent = lang;
+                    
+                    const copyBtn = document.createElement('button');
+                    copyBtn.className = 'copy-btn';
+                    copyBtn.textContent = 'Копировать';
+                    copyBtn.onclick = () => {
+                        navigator.clipboard.writeText(code);
+                        copyBtn.textContent = 'Скопировано!';
+                        copyBtn.classList.add('copied');
+                        setTimeout(() => {
+                            copyBtn.textContent = 'Копировать';
+                            copyBtn.classList.remove('copied');
+                        }, 2000);
+                    };
+                    
+                    header.appendChild(langLabel);
+                    header.appendChild(copyBtn);
+                    pre.insertBefore(header, block);
+                });
+                
+                return temp.innerHTML;
+            }
+
+            addLoadingMessage() {
+                const msgDiv = document.createElement('div');
+                msgDiv.className = 'message loading';
+                msgDiv.id = 'loadingMsg';
+                
+                const bubble = document.createElement('div');
+                bubble.className = 'message-bubble';
+                bubble.textContent = 'Думаю...';
+                
+                msgDiv.appendChild(bubble);
+                this.messagesContainer.appendChild(msgDiv);
+                
+                this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+            }
+
+            removeLoadingMessage() {
+                const loading = document.getElementById('loadingMsg');
+                if (loading) loading.remove();
+            }
+
+            async sendMessage() {
+                if (this.isLoading) return;
+
+                const message = this.messageInput.value.trim();
+                if (!message && this.attachedImages.length === 0) return;
+
+                const images = [...this.attachedImages];
+                this.addUserMessage(message, images.length > 0 ? images : null);
+                this.currentSession.addMessage('user', message, images.length > 0 ? images : null);
+                
+                this.messageInput.value = '';
+                this.messageInput.style.height = 'auto';
+                this.attachedImages = [];
+                this.updateImagePreviews();
+
+                this.isLoading = true;
+                this.sendBtn.disabled = true;
+
+                if (this.multiAiMode) {
+                    await this.sendMultiAiRequest(message, images);
+                } else {
+                    this.addLoadingMessage();
+                    await this.sendSingleAiRequest(message, images);
+                }
+
+                this.isLoading = false;
+                this.sendBtn.disabled = false;
+            }
+
+            async sendSingleAiRequest(message, images) {
+                try {
+                    const response = await this.callAiApi(this.currentModel, message, images);
+                    this.removeLoadingMessage();
+                    this.addAiMessage(response);
+                    this.currentSession.addMessage('assistant', response);
+                    this.updateChatsList();
+                    this.saveSessions();
+                } catch (error) {
+                    this.removeLoadingMessage();
+                    this.addAiMessage(`Ошибка: ${error.message}`);
+                }
+            }
+
+            async sendMultiAiRequest(message, images) {
+                const responses = {};
+                Object.keys(MODELS).forEach(model => {
+                    responses[model] = null;
+                });
+                
+                const multiMsg = this.addMultiResponse(responses);
+                
+                const promises = Object.keys(MODELS).map(async (model) => {
+                    try {
+                        const response = await this.callAiApi(model, message, images);
+                        responses[model] = response;
+                        
+                        const tab = Array.from(multiMsg.tabs.children).find(t => 
+                            t.textContent.includes(model)
+                        );
+                        if (tab) {
+                            tab.classList.remove('loading');
+                            if (tab.classList.contains('active')) {
+                                multiMsg.bubble.innerHTML = this.formatMessage(response);
+                            }
+                        }
+                    } catch (error) {
+                        responses[model] = `Ошибка: ${error.message}`;
+                        const tab = Array.from(multiMsg.tabs.children).find(t => 
+                            t.textContent.includes(model)
+                        );
+                        if (tab) {
+                            tab.classList.remove('loading');
+                        }
+                    }
+                });
+                
+                await Promise.all(promises);
+                
+                this.currentSession.addMessage('assistant', '', null);
+                this.currentSession.history[this.currentSession.history.length - 1].multiResponses = responses;
+                this.updateChatsList();
+                this.saveSessions();
+            }
+
+            async callAiApi(model, message, images) {
+                const modelId = MODELS[model].id;
+                
+                let messages = [...this.currentSession.history];
+                if (images && images.length > 0) {
+                    const lastMsg = messages[messages.length - 1];
+                    const content = [{ type: "text", text: lastMsg.content }];
+                    
+                    images.forEach(img => {
+                        const base64 = img.data.split(',')[1];
+                        const mediaType = img.data.split(':')[1].split(';')[0];
+                        content.push({
+                            type: "image_url",
+                            image_url: {
+                                url: img.data
+                            }
+                        });
+                    });
+                    
+                    messages[messages.length - 1] = {
+                        role: lastMsg.role,
+                        content: content
+                    };
+                } else {
+                    messages = messages.map(m => ({
+                        role: m.role,
+                        content: m.content
+                    }));
+                }
+
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${API_KEY}`,
+                        'Content-Type': 'application/json',
+                        'HTTP-Referer': window.location.href,
+                        'X-Title': 'AI Helper Web'
+                    },
+                    body: JSON.stringify({
+                        model: modelId,
+                        messages: messages,
+                        max_tokens: 2000,
+                        temperature: 0.7
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+                return data.choices[0].message.content;
+            }
+
+            updateChatsList() {
+                this.chatsList.innerHTML = '';
+
+                this.sessions.forEach(session => {
+                    const chatDiv = document.createElement('div');
+                    chatDiv.className = 'chat-item';
+                    if (session === this.currentSession) {
+                        chatDiv.classList.add('active');
+                    }
+
+                    const textSpan = document.createElement('span');
+                    textSpan.className = 'chat-item-text';
+                    textSpan.textContent = session.getPreview();
+                    
+                    const deleteBtn = document.createElement('span');
+                    deleteBtn.className = 'delete-chat-btn';
+                    deleteBtn.textContent = '✕';
+                    deleteBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        this.deleteChat(session);
+                    };
+
+                    chatDiv.appendChild(textSpan);
+                    chatDiv.appendChild(deleteBtn);
+                    chatDiv.onclick = () => this.loadChat(session);
+
+                    this.chatsList.appendChild(chatDiv);
+                });
+            }
+
+            searchChats(query) {
+                query = query.toLowerCase();
+                const items = this.chatsList.querySelectorAll('.chat-item');
+                
+                items.forEach(item => {
+                    const text = item.querySelector('.chat-item-text').textContent.toLowerCase();
+                    item.style.display = text.includes(query) ? 'flex' : 'none';
+                });
+            }
+
+            saveSessions() {
+                try {
+                    localStorage.setItem('ai_helper_sessions', JSON.stringify(this.sessions));
+                } catch (e) {
+                    console.error('Ошибка сохранения:', e);
+                }
+            }
+
+            loadSessions() {
+                try {
+                    const data = localStorage.getItem('ai_helper_sessions');
+                    if (data) {
+                        const parsed = JSON.parse(data);
+                        this.sessions = parsed.map(s => {
+                            const session = new ChatSession(s.title, s.model);
+                            session.id = s.id;
+                            session.history = s.history;
+                            session.createdAt = new Date(s.createdAt);
+                            return session;
+                        });
+                    }
+                } catch (e) {
+                    console.error('Ошибка загрузки:', e);
+                    this.sessions = [];
+                }
+            }
+        }
+
+        const app = new AIHelperApp();
+    </script>
+</body>
+</html>

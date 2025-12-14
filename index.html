@@ -27,87 +27,6 @@
             height: 100vh;
         }
 
-        .api-key-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
-        }
-
-        .api-key-modal.hidden {
-            display: none;
-        }
-
-        .modal-content {
-            background: #1a1a1a;
-            padding: 30px;
-            border-radius: 16px;
-            max-width: 500px;
-            width: 90%;
-            border: 1px solid #3a3a3a;
-        }
-
-        .modal-title {
-            font-size: 20px;
-            margin-bottom: 10px;
-            color: #fff;
-        }
-
-        .modal-description {
-            font-size: 14px;
-            color: #888;
-            margin-bottom: 20px;
-            line-height: 1.5;
-        }
-
-        .modal-input {
-            width: 100%;
-            background: #0f0f0f;
-            border: 1px solid #3a3a3a;
-            color: #fff;
-            padding: 12px;
-            border-radius: 8px;
-            font-size: 14px;
-            margin-bottom: 15px;
-            font-family: monospace;
-        }
-
-        .modal-btn {
-            width: 100%;
-            background: #4a9a6a;
-            border: none;
-            color: #fff;
-            padding: 12px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.2s;
-        }
-
-        .modal-btn:hover {
-            background: #5aaa7a;
-        }
-
-        .modal-link {
-            display: block;
-            text-align: center;
-            margin-top: 15px;
-            color: #4a9a6a;
-            font-size: 13px;
-            text-decoration: none;
-        }
-
-        .modal-link:hover {
-            text-decoration: underline;
-        }
-
-        /* Sidebar */
         .sidebar {
             width: 260px;
             background: rgba(20, 20, 20, 0.5);
@@ -129,22 +48,6 @@
         .logo {
             font-size: 16px;
             font-weight: 600;
-            color: #fff;
-        }
-
-        .settings-btn {
-            background: transparent;
-            border: 1px solid #3a3a3a;
-            color: #888;
-            padding: 6px 10px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.2s;
-        }
-
-        .settings-btn:hover {
-            background: #2a2a2a;
             color: #fff;
         }
 
@@ -363,7 +266,6 @@
             color: #ff4444;
         }
 
-        /* Main Chat Area */
         .chat-area {
             flex: 1;
             display: flex;
@@ -442,7 +344,6 @@
             display: block;
         }
 
-        /* Multi-AI Response Tabs */
         .multi-response-container {
             max-width: 80%;
         }
@@ -478,7 +379,6 @@
             cursor: wait;
         }
 
-        /* Code blocks */
         .message-bubble pre {
             background: #1a1a1a;
             border-radius: 8px;
@@ -545,7 +445,6 @@
             margin-bottom: 0;
         }
 
-        /* Input Area */
         .input-area {
             padding: 16px 20px 20px 20px;
             border-top: 1px solid #2a2a2a;
@@ -676,33 +575,18 @@
     </style>
 </head>
 <body>
-    <!-- API Key Modal -->
-    <div class="api-key-modal" id="apiKeyModal">
-        <div class="modal-content">
-            <h2 class="modal-title">🔑 Введите API ключ OpenRouter</h2>
-            <p class="modal-description">
-                Для работы приложения необходим API ключ от OpenRouter. 
-                Ключ будет сохранен только в вашем браузере и никуда не отправляется.
-            </p>
-            <input 
-                type="text" 
-                class="modal-input" 
-                id="apiKeyInput" 
-                placeholder="sk-or-v1-..."
-            >
-            <button class="modal-btn" id="saveApiKeyBtn">Сохранить ключ</button>
-            <a href="https://openrouter.ai/keys" target="_blank" class="modal-link">
-                Получить ключ на OpenRouter →
-            </a>
-        </div>
-    </div>
-
     <div class="app-container">
-        <!-- Sidebar -->
         <div class="sidebar">
             <div class="sidebar-header">
                 <div class="logo">AI Helper</div>
-                <button class="settings-btn" id="settingsBtn" title="Настройки API ключа">⚙️</button>
+                <div class="model-selector">
+                    <button class="model-btn" id="modelBtn">🦙 Llama 3.1 70B</button>
+                    <div class="model-dropdown" id="modelDropdown">
+                        <div class="model-option" data-model="DeepSeek R1">🧠 DeepSeek R1</div>
+                        <div class="model-option" data-model="Gemini Pro">🌟 Gemini Pro</div>
+                        <div class="model-option" data-model="GPT-3.5 Turbo">⚡ GPT-3.5 Turbo</div>
+                    </div>
+                </div>
             </div>
 
             <div class="multi-ai-toggle" id="multiAiToggle">
@@ -721,7 +605,6 @@
             <div class="chats-list" id="chatsList"></div>
         </div>
 
-        <!-- Main Chat Area -->
         <div class="chat-area">
             <div class="messages-container" id="messagesContainer">
                 <div class="welcome-message">Чем могу помочь?</div>
@@ -739,9 +622,7 @@
                         ></textarea>
                     </div>
                     <div class="input-actions">
-                        <button class="attach-btn" id="attachBtn" title="Прикрепить изображение">
-                            📎
-                        </button>
+                        <button class="attach-btn" id="attachBtn" title="Прикрепить изображение">📎</button>
                         <button class="send-btn" id="sendBtn" title="Отправить">↑</button>
                     </div>
                 </div>
@@ -752,6 +633,9 @@
     <input type="file" id="imageInput" accept="image/*" multiple>
 
     <script>
+        // ВСТАВЬТЕ СВОЙ API КЛЮЧ СЮДА:
+        const API_KEY = "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";
+        
         const API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
         const MODELS = {
@@ -796,7 +680,6 @@
 
         class AIHelperApp {
             constructor() {
-                this.API_KEY = null;
                 this.sessions = [];
                 this.currentSession = null;
                 this.currentModel = "Llama 3.1 70B";
@@ -804,7 +687,6 @@
                 this.multiAiMode = false;
                 this.attachedImages = [];
 
-                this.initApiKey();
                 this.loadSessions();
                 this.initElements();
                 this.bindEvents();
@@ -816,22 +698,9 @@
                 }
             }
 
-            initApiKey() {
-                this.API_KEY = localStorage.getItem('openrouter_api_key');
-                const modal = document.getElementById('apiKeyModal');
-                
-                if (!this.API_KEY) {
-                    modal.classList.remove('hidden');
-                } else {
-                    modal.classList.add('hidden');
-                }
-            }
-
             initElements() {
-                this.apiKeyModal = document.getElementById('apiKeyModal');
-                this.apiKeyInput = document.getElementById('apiKeyInput');
-                this.saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
-                this.settingsBtn = document.getElementById('settingsBtn');
+                this.modelBtn = document.getElementById('modelBtn');
+                this.modelDropdown = document.getElementById('modelDropdown');
                 this.multiAiToggle = document.getElementById('multiAiToggle');
                 this.newChatBtn = document.getElementById('newChatBtn');
                 this.searchBox = document.getElementById('searchBox');
@@ -846,8 +715,7 @@
             }
 
             bindEvents() {
-                this.saveApiKeyBtn.onclick = () => this.saveApiKey();
-                this.settingsBtn.onclick = () => this.openSettings();
+                this.modelBtn.onclick = () => this.toggleModelDropdown();
                 this.multiAiToggle.onclick = () => this.toggleMultiAi();
                 this.newChatBtn.onclick = () => this.createNewChat();
                 this.clearBtn.onclick = () => this.deleteAllChats();
@@ -868,34 +736,45 @@
                     this.messageInput.style.height = 'auto';
                     this.messageInput.style.height = Math.min(this.messageInput.scrollHeight, 200) + 'px';
                 };
+
+                document.querySelectorAll('.model-option').forEach(opt => {
+                    opt.onclick = () => this.selectModel(opt.dataset.model);
+                });
+
+                document.addEventListener('click', (e) => {
+                    if (!this.modelBtn.contains(e.target) && !this.modelDropdown.contains(e.target)) {
+                        this.modelDropdown.classList.remove('active');
+                    }
+                });
             }
 
-            saveApiKey() {
-                const key = this.apiKeyInput.value.trim();
-                if (!key) {
-                    alert('Пожалуйста, введите API ключ');
-                    return;
-                }
-                
-                if (!key.startsWith('sk-or-v1-')) {
-                    alert('Неверный формат ключа. Ключ должен начинаться с sk-or-v1-');
-                    return;
-                }
-                
-                this.API_KEY = key;
-                localStorage.setItem('openrouter_api_key', key);
-                this.apiKeyModal.classList.add('hidden');
-                console.log('API ключ сохранен');
+            toggleModelDropdown() {
+                this.modelDropdown.classList.toggle('active');
+                this.updateModelDropdown();
             }
 
-            openSettings() {
-                this.apiKeyInput.value = this.API_KEY || '';
-                this.apiKeyModal.classList.remove('hidden');
+            updateModelDropdown() {
+                const options = this.modelDropdown.querySelectorAll('.model-option');
+                options.forEach(opt => {
+                    opt.style.display = opt.dataset.model === this.currentModel ? 'none' : 'block';
+                });
             }
 
             toggleMultiAi() {
                 this.multiAiMode = !this.multiAiMode;
                 this.multiAiToggle.classList.toggle('active', this.multiAiMode);
+            }
+
+            selectModel(model) {
+                this.currentModel = model;
+                const icon = MODELS[model].icon;
+                this.modelBtn.textContent = `${icon} ${model}`;
+                this.modelDropdown.classList.remove('active');
+                
+                if (this.currentSession) {
+                    this.currentSession.model = model;
+                    this.saveSessions();
+                }
             }
 
             handleImageSelect(e) {
@@ -981,6 +860,8 @@
             loadChat(session) {
                 this.currentSession = session;
                 this.currentModel = session.model;
+                const icon = MODELS[session.model].icon;
+                this.modelBtn.textContent = `${icon} ${session.model}`;
                 this.updateChatsList();
                 this.displayHistory();
             }
@@ -1004,4 +885,89 @@
                 });
 
                 setTimeout(() => {
-                    this.mess
+                    this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+                }, 100);
+            }
+
+            clearMessages() {
+                this.messagesContainer.innerHTML = '';
+            }
+
+            showWelcome() {
+                this.messagesContainer.innerHTML = '<div class="welcome-message">Чем могу помочь?</div>';
+            }
+
+            addUserMessage(text, images = null) {
+                const msgDiv = document.createElement('div');
+                msgDiv.className = 'message user';
+                
+                const bubble = document.createElement('div');
+                bubble.className = 'message-bubble';
+                
+                if (images && images.length > 0) {
+                    images.forEach(img => {
+                        const imgEl = document.createElement('img');
+                        imgEl.src = img.data;
+                        imgEl.className = 'message-image';
+                        bubble.appendChild(imgEl);
+                    });
+                }
+                
+                const textEl = document.createElement('div');
+                textEl.textContent = text;
+                bubble.appendChild(textEl);
+                
+                msgDiv.appendChild(bubble);
+                this.messagesContainer.appendChild(msgDiv);
+                
+                this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+            }
+
+            addAiMessage(text) {
+                const msgDiv = document.createElement('div');
+                msgDiv.className = 'message assistant';
+                
+                const bubble = document.createElement('div');
+                bubble.className = 'message-bubble';
+                bubble.innerHTML = this.formatMessage(text);
+                
+                msgDiv.appendChild(bubble);
+                this.messagesContainer.appendChild(msgDiv);
+                
+                this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+            }
+
+            addMultiResponse(responses) {
+                const msgDiv = document.createElement('div');
+                msgDiv.className = 'message assistant';
+                
+                const container = document.createElement('div');
+                container.className = 'multi-response-container';
+                
+                const tabs = document.createElement('div');
+                tabs.className = 'response-tabs';
+                
+                const bubble = document.createElement('div');
+                bubble.className = 'message-bubble';
+                
+                let activeModel = null;
+                
+                Object.entries(responses).forEach(([model, response], index) => {
+                    const tab = document.createElement('div');
+                    tab.className = 'response-tab';
+                    if (response === null) tab.classList.add('loading');
+                    if (index === 0 && response !== null) {
+                        tab.classList.add('active');
+                        activeModel = model;
+                    }
+                    tab.textContent = `${MODELS[model].icon} ${model}`;
+                    tab.onclick = () => {
+                        if (response === null) return;
+                        tabs.querySelectorAll('.response-tab').forEach(t => t.classList.remove('active'));
+                        tab.classList.add('active');
+                        bubble.innerHTML = this.formatMessage(response);
+                    };
+                    tabs.appendChild(tab);
+                });
+                
+                if (activeModel && responses[activeModel]) {
